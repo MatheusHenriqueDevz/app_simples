@@ -28,7 +28,7 @@ jobs:
               with:
                   context: .
                   push: true
-                  tags: matheus/app_simples:latest
+                  tags: ${{secrets.DOCKER_USER}}/app_simples:latest
 
     test:
         name: Teste
@@ -42,7 +42,7 @@ jobs:
                   username: ${{ secrets.DOCKER_USER }}
                   password: ${{ secrets.DOCKER_PASS }}
             - name: Rodar testes dentro do Container
-              run: docker run matheus/app_simples:latest mvn clean verify
+              run: docker run ${{secrets.DOCKER_USER}}/app_simples:latest mvn clean verify
 
     security-and-analysis:
         name: Security & Quality Analysis
