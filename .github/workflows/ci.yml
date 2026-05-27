@@ -9,91 +9,19 @@ on:
             - main
 
 jobs:
-    build:
-        name: Build
-        runs-on: ubuntu-latest
-        environment: production
-        steps:
-            - name: Checkout código
-              uses: actions/checkout@v4
-
-            - name: Login no DockerHub
-              uses: docker/login-action@v3
-              with:
-                  username: ${{ secrets.DOCKER_USER }}
-                  password: ${{ secrets.DOCKER_PASS }}
-
-            - name: Build e Push da Imagem
-              uses: docker/build-push-action@v5
-              with:
-                  context: .
-                  push: true
-                  tags: joljolionn/pipeline-ci:latest
-
     test:
         name: Teste
-        needs: build
-        environment: production
-        runs-on: ubuntu-latest
-        steps:
-            - name: Login no DockerHub
-              uses: docker/login-action@v3
-              with:
-                  username: ${{ secrets.DOCKER_USER }}
-                  password: ${{ secrets.DOCKER_PASS }}
-            - name: Rodar testes dentro do Container
-              run: docker run joljolionn/pipeline-ci:latest mvn clean verify
-
-    security-and-analysis:
-        name: Security & Quality Analysis
-        needs: test
-        environment: production
         runs-on: ubuntu-latest
         steps:
             - name: Checkout código
               uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
+
             - name: Setup Java
               uses: actions/setup-java@v4
               with:
                   java-version: "21"
                   distribution: "temurin"
                   cache: "maven"
-            - name: Sonar Analysis
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-              run: |
-                  mvn clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-                  -Dsonar.projectKey=Joljolionn_teste_api_CEP_CI-CD \
-                  -Dsonar.organization=joljolionn \
-                  -Dsonar.host.url=https://sonarcloud.io
 
-    deploy:
-        name: Production Deploy
-        needs: security-and-analysis
-        runs-on: ubuntu-latest
-        environment: production
-        steps:
-            - name: Deploy via SSH
-              uses: appleboy/ssh-action@master
-              with:
-                  host: ${{ secrets.SSH_HOST }}
-                  username: ${{ secrets.SSH_USER }}
-                  key: ${{ secrets.SSH_KEY }}
-                  script: |
-                      # Entra na home do usuário
-                      cd ~
-                      # Se o projeto não existe, clone. Se existe, pull
-                      if [ ! -d "lazarini-app" ]; then
-                        git clone https://github.com/Joljolionn/teste_api_CEP_CI-CD lazarini-app
-                      fi
-                      cd lazarini-app
-                      git pull origin main
-                      docker compose pull
-                      docker compose up -d
-
-            - name: Deploy
-              run: |
-                  echo "Script de deploy para infraestrutura de nuvem"
+            - name: Rodar testes
+              run: ./mvnw clean verify
